@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Study Quest</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #080a1c;
+      --card:     #111433;
+      --card2:    #192058;
+      --border:   #2c3480;
+      --gold:     #ffd700;
+      --purple:   #8b5cf6;
+      --pink:     #f472b6;
+      --green:    #10b981;
+      --cyan:     #06b6d4;
+      --text:     #dde4ff;
+      --muted:    #6474b8;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      color: var(--text);
+      padding: 20px 16px;
+      overflow-x: hidden;
+    }
+
+    /* ── Stars ── */
+    #stars {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      opacity: 0;
+      animation: twinkle var(--d) ease-in-out infinite var(--delay);
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: 0;   transform: scale(.6); }
+      50%      { opacity: .85; transform: scale(1.4); }
+    }
+
+    /* ── Card ── */
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      padding: 28px 22px 24px;
+      box-shadow:
+        0 0 50px rgba(139,92,246,.12),
+        0 0 100px rgba(139,92,246,.05),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    /* ── Title ── */
+    .title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(18px, 5vw, 22px);
+      text-align: center;
+      line-height: 1.6;
+      background: linear-gradient(135deg, #ffd700 0%, #f472b6 55%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 10px rgba(255,215,0,.35));
+      margin-bottom: 26px;
+      letter-spacing: 2px;
+    }
+
+    /* ── Level panel ── */
+    .level-panel {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .level-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--purple), var(--gold), var(--pink));
+    }
+
+    .lv-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .lv-badge { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    .lv-label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+    }
+    .lv-num {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 40px;
+      color: var(--gold);
+      filter: drop-shadow(0 0 14px rgba(255,215,0,.6));
+      line-height: 1;
+      transition: transform .2s;
+    }
+    .lv-num.bump { animation: bump .3s ease-out; }
+    @keyframes bump { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+
+    .xp-side { text-align: right; }
+    .xp-num {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 16px;
+      color: var(--cyan);
+      filter: drop-shadow(0 0 6px rgba(6,182,212,.55));
+      transition: transform .2s;
+    }
+    .xp-num.bump { animation: bump .3s ease-out; }
+    .xp-sub { font-size: 9px; color: var(--muted); margin-top: 5px; letter-spacing: 1.5px; }
+
+    /* XP bar */
+    .bar-wrap {
+      background: rgba(0,0,0,.45);
+      border-radius: 999px;
+      height: 13px;
+      border: 1px solid rgba(255,255,255,.04);
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #7c3aed, #06b6d4, #10b981);
+      transition: width .65s cubic-bezier(.34,1.56,.64,1);
+      width: 0%;
+      position: relative;
+    }
+    .bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 8px; right: 8px;
+      height: 4px;
+      background: rgba(255,255,255,.3);
+      border-radius: 999px;
+    }
+    .bar-shimmer {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+      animation: shimmer 2.2s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0%{transform:translateX(-120%)} 100%{transform:translateX(220%)} }
+
+    .bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+
+    /* ── Input ── */
+    .input-wrap { margin-bottom: 16px; }
+    .input-lbl {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .study-input {
+      width: 100%;
+      background: rgba(0,0,0,.3);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .study-input::placeholder { color: var(--muted); opacity: .7; }
+    .study-input:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(139,92,246,.18), 0 0 18px rgba(139,92,246,.1);
+    }
+
+    /* ── Button ── */
+    .study-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      border: none;
+      border-radius: 16px;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(12px, 3.5vw, 14px);
+      cursor: pointer;
+      box-shadow: 0 4px 22px rgba(139,92,246,.4), 0 2px 0 rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+      transition: transform .1s, box-shadow .1s, background .25s;
+      letter-spacing: 1px;
+    }
+    .study-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 55%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+      transition: left .45s;
+    }
+    .study-btn:hover::before { left: 160%; }
+    .study-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139,92,246,.5), 0 2px 0 rgba(0,0,0,.35);
+    }
+    .study-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 10px rgba(139,92,246,.3), 0 1px 0 rgba(0,0,0,.35);
+    }
+    .study-btn.success { background: linear-gradient(135deg, #059669, #047857); }
+
+    /* ── Notification ── */
+    .notif-area {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-top: 12px;
+    }
+    .xp-pop {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 20px;
+      color: var(--green);
+      filter: drop-shadow(0 0 8px rgba(16,185,129,.8));
+      position: absolute;
+      pointer-events: none;
+      animation: floatUp 1.3s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0)   scale(.7); }
+      20%  {              transform: translateY(-12px) scale(1.25); }
+      80%  { opacity: 1; transform: translateY(-36px) scale(1);   }
+      100% { opacity: 0; transform: translateY(-56px) scale(.8);  }
+    }
+
+    /* ── Stats chips ── */
+    .stats { display: flex; gap: 10px; margin-top: 16px; }
+    .chip {
+      flex: 1;
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .chip-val {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: var(--gold);
+    }
+    .chip-lbl { font-size: 9px; color: var(--muted); margin-top: 5px; letter-spacing: 1px; }
+
+    /* ── LEVEL UP overlay ── */
+    .lu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.72);
+      backdrop-filter: blur(6px);
+      animation: fadeIn .15s ease;
+    }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .lu-box {
+      text-align: center;
+      animation: popIn .5s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn {
+      0%   { transform: scale(.25) rotate(-8deg); opacity:0; }
+      60%  { transform: scale(1.12) rotate(2deg);  opacity:1; }
+      100% { transform: scale(1)   rotate(0deg);   opacity:1; }
+    }
+
+    .lu-text {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(28px, 9vw, 40px);
+      background: linear-gradient(135deg, #ffd700, #f472b6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 22px rgba(255,215,0,.75));
+      line-height: 1.4;
+    }
+    .lu-lv {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 22px;
+      color: var(--gold);
+      margin: 10px 0;
+      filter: drop-shadow(0 0 10px rgba(255,215,0,.6));
+    }
+    .lu-stars {
+      font-size: 42px;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+      animation: popIn .5s .08s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    /* ── Particle ── */
+    .pt {
+      position: fixed;
+      pointer-events: none;
+      z-index: 199;
+      border-radius: 50%;
+      animation: ptFly var(--d) ease-out forwards;
+    }
+    @keyframes ptFly {
+      0%   { transform: translate(0,0)              scale(1);   opacity:1; }
+      100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity:0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .star, .bar-shimmer { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div class="card">
+
+  <h1 class="title">STUDY<br>QUEST</h1>
+
+  <!-- Level panel -->
+  <div class="level-panel">
+    <div class="lv-row">
+      <div class="lv-badge">
+        <span class="lv-label">⚔️ LEVEL</span>
+        <span class="lv-num" id="lvNum">1</span>
+      </div>
+      <div class="xp-side">
+        <div class="xp-num" id="xpNum">0</div>
+        <div class="xp-sub">✨ XP</div>
+      </div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" id="barFill"></div>
+      <div class="bar-shimmer"></div>
+    </div>
+    <div class="bar-labels">
+      <span>0</span>
+      <span id="barLabel">0 / 100 XP</span>
+      <span>100</span>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-wrap">
+    <label class="input-lbl" for="studyInput">📖 今日の勉強内容</label>
+    <input id="studyInput" class="study-input"
+           type="text"
+           placeholder="例：英語10問、数学20分"
+           autocomplete="off">
+  </div>
+
+  <!-- Button -->
+  <button class="study-btn" id="studyBtn">⚡ 勉強した！</button>
+
+  <!-- Notification -->
+  <div class="notif-area" id="notifArea"></div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="chip">
+      <div class="chip-val" id="sessNum">0</div>
+      <div class="chip-lbl">📚 学習回数</div>
+    </div>
+    <div class="chip">
+      <div class="chip-val" id="totalXp">0</div>
+      <div class="chip-lbl">💎 累計XP</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ── State ── */
+  const XP_GAIN  = 50;
+  const XP_LEVEL = 100;
+  let state = { lv: 1, xp: 0, sessions: 0, totalXp: 0 };
+
+  function save() {
+    try { localStorage.setItem('sq', JSON.stringify(state)); } catch(e){}
+  }
+  function load() {
+    try {
+      const d = localStorage.getItem('sq');
+      if (d) state = { ...state, ...JSON.parse(d) };
+    } catch(e){}
+  }
+
+  /* ── UI update ── */
+  function renderUI(bumpLv, bumpXp) {
+    const lvEl  = document.getElementById('lvNum');
+    const xpEl  = document.getElementById('xpNum');
+
+    lvEl.textContent = state.lv;
+    xpEl.textContent = state.xp;
+    document.getElementById('barFill').style.width  = (state.xp / XP_LEVEL * 100) + '%';
+    document.getElementById('barLabel').textContent = `${state.xp} / ${XP_LEVEL} XP`;
+    document.getElementById('sessNum').textContent  = state.sessions;
+    document.getElementById('totalXp').textContent  = state.totalXp;
+
+    if (bumpLv)  { lvEl.classList.remove('bump'); void lvEl.offsetWidth; lvEl.classList.add('bump'); }
+    if (bumpXp)  { xpEl.classList.remove('bump'); void xpEl.offsetWidth; xpEl.classList.add('bump'); }
+  }
+
+  /* ── +XP popup ── */
+  function showPop(txt, color = '#10b981') {
+    const area = document.getElementById('notifArea');
+    area.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'xp-pop';
+    el.textContent = txt;
+    el.style.color = color;
+    el.style.filter = `drop-shadow(0 0 8px ${color}90)`;
+    area.appendChild(el);
+    setTimeout(() => el.remove(), 1300);
+  }
+
+  /* ── Level Up overlay ── */
+  function showLevelUp(lv) {
+    const ov = document.createElement('div');
+    ov.className = 'lu-overlay';
+    ov.innerHTML = `
+      <div class="lu-box">
+        <div class="lu-text">LEVEL<br>UP!!</div>
+        <div class="lu-lv">Lv. ${lv}</div>
+        <div class="lu-stars">🌟 ✨ ⭐</div>
+      </div>`;
+    document.body.appendChild(ov);
+    burst();
+    setTimeout(() => {
+      ov.style.transition = 'opacity .3s';
+      ov.style.opacity = '0';
+      setTimeout(() => ov.remove(), 310);
+    }, 1600);
+  }
+
+  /* ── Particle burst ── */
+  const COLORS = ['#ffd700','#f472b6','#8b5cf6','#06b6d4','#10b981','#fb923c'];
+  function burst() {
+    const cx = innerWidth / 2, cy = innerHeight / 2;
+    for (let i = 0; i < 22; i++) {
+      const ang  = (Math.PI * 2 / 22) * i + Math.random() * .3;
+      const dist = 90 + Math.random() * 160;
+      const el   = document.createElement('div');
+      el.className = 'pt';
+      const sz = 5 + Math.random() * 6;
+      el.style.cssText = `
+        left:${cx}px; top:${cy}px;
+        width:${sz}px; height:${sz}px;
+        background:${COLORS[i % COLORS.length]};
+        --tx:${Math.cos(ang)*dist}px;
+        --ty:${Math.sin(ang)*dist}px;
+        --d:${.55 + Math.random()*.7}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1300);
+    }
+  }
+
+  /* ── Button handler ── */
+  document.getElementById('studyBtn').addEventListener('click', () => {
+    state.sessions++;
+    state.totalXp += XP_GAIN;
+    state.xp      += XP_GAIN;
+
+    const btn = document.getElementById('studyBtn');
+
+    if (state.xp >= XP_LEVEL) {
+      state.xp -= XP_LEVEL;
+      state.lv++;
+      renderUI(true, false);
+      showLevelUp(state.lv);
+      setTimeout(() => showPop('+50 XP!', '#10b981'), 250);
+    } else {
+      renderUI(false, true);
+      showPop('+50 XP!', '#10b981');
+    }
+
+    btn.classList.add('success');
+    setTimeout(() => btn.classList.remove('success'), 320);
+
+    save();
+  });
+
+  /* ── Enter key support ── */
+  document.getElementById('studyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('studyBtn').click();
+  });
+
+  /* ── Stars ── */
+  (function createStars() {
+    const cont = document.getElementById('stars');
+    for (let i = 0; i < 90; i++) {
+      const el = document.createElement('div');
+      el.className = 'star';
+      const sz = .8 + Math.random() * 2;
+      el.style.cssText = `
+        left:${Math.random()*100}%;
+        top:${Math.random()*100}%;
+        width:${sz}px; height:${sz}px;
+        --d:${1.5 + Math.random()*3.5}s;
+        animation-delay:${Math.random()*4}s;
+      `;
+      cont.appendChild(el);
+    }
+  })();
+
+  /* ── Init ── */
+  load();
+  renderUI(false, false);
+</script>
+
+</body>
+</html>
